@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Controle de Inadimplência — Perinity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --ink:#131A26;
+  --ink-2:#1D2735;
+  --paper:#EDF0F4;
+  --surface:#FFFFFF;
+  --line:#D5DBE4;
+  --line-soft:#E7EBF0;
+  --muted:#69748A;
+  --accent:#0E6E7E;
+  --accent-soft:#E3F1F3;
+
+  /* rampa de aging — única fonte de cor do sistema */
+  --r-av:#0E7C5A;
+  --r-30:#E0A82E;
+  --r-60:#D9822B;
+  --r-90:#C4551F;
+  --r-180:#A8321C;
+  --r-365:#7A1F16;
+  --r-max:#4A0F0C;
+
+  --ok:#0E7C5A;
+  --warn:#C8811A;
+  --bad:#A8321C;
+
+  --f-disp:'Archivo',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--f-disp);
+  background:var(--paper);
+  color:var(--ink);
+  font-size:14px;
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer}
+input,select{font-family:inherit}
+.mono{font-variant-numeric:tabular-nums;font-family:var(--f-mono)}
+
+/* ---------- LOGIN ---------- */
+#gate{
+  position:fixed;inset:0;z-index:100;
+  background:var(--ink);
+  display:flex;align-items:center;justify-content:center;padding:24px;
+}
+#gate .box{width:100%;max-width:380px}
+#gate .brand{
+  font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+  color:#6E7C90;margin-bottom:28px;font-weight:600;
+}
+#gate h1{
+  font-size:30px;line-height:1.1;font-weight:700;color:#fff;
+  letter-spacing:-.02em;margin-bottom:6px;
+}
+#gate p.sub{color:#8593A8;font-size:13px;margin-bottom:26px}
+#gate .field{display:flex;gap:8px}
+#gate input{
+  flex:1;background:#0B111C;border:1px solid #2B3648;color:#fff;
+  padding:11px 12px;border-radius:5px;font-size:14px;outline:none;
+  font-family:var(--f-mono);
+}
+#gate input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(14,110,126,.25)}
+#gate button{
+  background:var(--accent);border:0;color:#fff;padding:11px 18px;
+  border-radius:5px;font-weight:600;font-size:13px;
+}
+#gate button:hover{background:#0B5A67}
+#gate .err{color:#F08A7A;font-size:12.5px;margin-top:12px;min-height:18px}
+#gate .warnbox{
+  margin-top:34px;border-left:2px solid #C4551F;padding:10px 0 10px 12px;
+  color:#8593A8;font-size:11.5px;line-height:1.55;
+}
+#gate .warnbox b{color:#D9822B;font-weight:600}
+
+/* ---------- SHELL ---------- */
+#app{display:none}
+header.top{
+  background:var(--ink);color:#fff;padding:0 20px;
+  position:sticky;top:0;z-index:40;border-bottom:1px solid #000;
+}
+.top-in{max-width:1500px;margin:0 auto;display:flex;align-items:center;gap:18px;height:54px}
+.logo{font-weight:700;letter-spacing:-.01em;font-size:15px}
+.logo span{color:var(--muted);font-weight:400}
+.top-meta{
+  margin-left:auto;display:flex;align-items:center;gap:16px;
+  font-size:11.5px;color:#8593A8;
+}
+.top-meta .mono{color:#fff}
+.tabs{
+  background:var(--ink-2);padding:0 20px;position:sticky;top:54px;z-index:39;
+  overflow-x:auto;
+}
+.tabs-in{max-width:1500px;margin:0 auto;display:flex;gap:2px}
+.tab{
+  background:transparent;border:0;color:#8593A8;padding:11px 14px;
+  font-size:12.5px;font-weight:500;white-space:nowrap;
+  border-bottom:2px solid transparent;
+}
+.tab:hover{color:#fff}
+.tab.on{color:#fff;border-bottom-color:var(--accent)}
+main{max-width:1500px;margin:0 auto;padding:20px}
+.view{display:none}
+.view.on{display:block}
+
+/* ---------- CARDS ---------- */
+.card{
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:6px;margin-bottom:16px;
+}
+.card-h{
+  padding:12px 16px;border-bottom:1px solid var(--line-soft);
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.card-h h2{font-size:13px;font-weight:600;letter-spacing:-.005em}
+.card-h .hint{font-size:11.5px;color:var(--muted);font-weight:400}
+.card-b{padding:16px}
+.card-b.flush{padding:0}
+.eyebrow{
+  font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--muted);font-weight:600;
+}
+
+/* ---------- KPI ---------- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:1px;background:var(--line-soft)}
+.kpi{background:var(--surface);padding:14px 16px}
+.kpi .lab{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:5px}
+.kpi .val{font-size:22px;font-weight:600;font-family:var(--f-mono);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.kpi .sub{font-size:11.5px;color:var(--muted);margin-top:3px}
+.kpi .val.bad{color:var(--bad)}
+.kpi .val.warn{color:var(--warn)}
+.kpi .val.ok{color:var(--ok)}
+
+/* ---------- ESPINHA DE AGING (elemento-assinatura) ---------- */
+.spine{display:flex;height:34px;border-radius:3px;overflow:hidden;background:var(--line-soft)}
+.spine i{display:block;height:100%;position:relative;transition:opacity .15s}
+.spine i:hover{opacity:.78}
+.spine-mini{display:flex;height:7px;border-radius:2px;overflow:hidden;background:var(--line-soft);width:74px}
+.spine-mini i{display:block;height:100%}
+.spine-leg{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px}
+.spine-leg div{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
+.spine-leg b{width:9px;height:9px;border-radius:2px;display:inline-block}
+.spine-leg span.v{color:var(--ink);font-family:var(--f-mono);font-weight:500}
+
+/* ---------- TABELAS ---------- */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{
+  text-align:left;padding:9px 12px;font-size:10.5px;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--muted);font-weight:600;
+  border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface);
+  position:sticky;top:0;
+}
+th.s{cursor:pointer;user-select:none}
+th.s:hover{color:var(--ink)}
+th.s::after{content:'';opacity:.3;margin-left:4px}
+th.s.asc::after{content:'▲';opacity:.8}
+th.s.desc::after{content:'▼';opacity:.8}
+td{padding:8px 12px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+tbody tr:hover{background:#F7F9FB}
+td.num,th.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+th.num{text-align:right}
+.cli{font-weight:500;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cli small{display:block;font-weight:400;color:var(--muted);font-size:10.5px;font-family:var(--f-mono)}
+
+/* ---------- BADGES ---------- */
+.rt{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border-radius:3px;color:#fff;
+  font-weight:700;font-size:11.5px;
+}
+.rt.A{background:var(--r-av)}.rt.B{background:#5D9B2E}
+.rt.C{background:var(--r-30);color:#3A2A05}
+.rt.D{background:var(--r-90)}.rt.E{background:var(--r-365)}
+.pill{
+  display:inline-block;padding:2px 7px;border-radius:3px;font-size:10.5px;
+  font-weight:600;background:var(--line-soft);color:var(--muted);
+}
+.pill.prov{background:#FDF0D9;color:#8A5A0B}
+.pill.up{background:#F7DDD8;color:#8E2A17}
+.pill.down{background:#DBF0E6;color:#0B5C43}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:6px}
+
+/* ---------- CONTROLES ---------- */
+.btn{
+  background:var(--surface);border:1px solid var(--line);color:var(--ink);
+  padding:7px 12px;border-radius:5px;font-size:12px;font-weight:500;
+}
+.btn:hover{border-color:var(--muted);background:#F7F9FB}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover{background:#0B5A67}
+.btn.dan{color:var(--bad);border-color:#E8C4BD}
+.btn.dan:hover{background:#FCF2F0}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.filters{
+  display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;
+}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+.fg input,.fg select{
+  border:1px solid var(--line);border-radius:5px;padding:6px 9px;font-size:12.5px;
+  background:var(--surface);color:var(--ink);outline:none;min-width:130px;
+}
+.fg input:focus,.fg select:focus{border-color:var(--accent)}
+.ml{margin-left:auto}
+
+/* ---------- DROP ---------- */
+#drop{
+  border:1.5px dashed var(--line);border-radius:6px;padding:44px 20px;text-align:center;
+  background:var(--surface);transition:.15s;
+}
+#drop.hot{border-color:var(--accent);background:var(--accent-soft)}
+#drop h3{font-size:16px;font-weight:600;margin-bottom:6px}
+#drop p{color:var(--muted);font-size:12.5px;margin-bottom:16px}
+
+/* ---------- ALERTAS ---------- */
+.note{
+  border-left:2px solid var(--warn);background:#FDF8EE;padding:10px 12px;
+  font-size:12px;color:#5C4409;border-radius:0 4px 4px 0;line-height:1.5;
+}
+.note.bad{border-color:var(--bad);background:#FCF2F0;color:#6E2114}
+.note.info{border-color:var(--accent);background:var(--accent-soft);color:#0A4A55}
+.note+.note{margin-top:8px}
+.note b{font-weight:600}
+
+/* ---------- MISC ---------- */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+@media(max-width:1000px){.grid2,.grid3{grid-template-columns:1fr}}
+.bar-track{height:5px;background:var(--line-soft);border-radius:3px;overflow:hidden;min-width:60px}
+.bar-fill{height:100%;background:var(--accent);border-radius:3px}
+.empty{padding:36px;text-align:center;color:var(--muted);font-size:12.5px}
+svg text{font-family:var(--f-mono);fill:var(--muted)}
+.abc{font-weight:700;font-family:var(--f-mono);font-size:11px}
+.abc.A{color:var(--r-365)}.abc.B{color:var(--r-60)}.abc.C{color:var(--muted)}
+.toast{
+  position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+  background:var(--ink);color:#fff;padding:10px 18px;border-radius:5px;
+  font-size:12.5px;z-index:90;opacity:0;transition:.2s;pointer-events:none;
+}
+.toast.on{opacity:1}
+.comp{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:11.5px}
+.comp .cn{width:96px;color:var(--muted);flex-shrink:0}
+.comp .cb{flex:1;height:5px;background:var(--line-soft);border-radius:3px;overflow:hidden}
+.comp .cf{height:100%;border-radius:3px}
+.comp .cv{width:34px;text-align:right;font-family:var(--f-mono);font-weight:500}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ============ PORTA ============ -->
+<div id="gate">
+  <div class="box">
+    <div class="brand">Perinity · Diretoria Financeira</div>
+    <h1>Controle de Inadimplência</h1>
+    <p class="sub">Carteira de contas a receber vencida, aging, concentração e rating de clientes.</p>
+    <div class="field">
+      <input type="password" id="pw" placeholder="Senha" autocomplete="current-password" autofocus>
+      <button id="pwBtn">Entrar</button>
+    </div>
+    <div class="err" id="pwErr"></div>
+    <div class="warnbox">
+      <b>Esta senha não protege dados.</b> Ela roda no navegador e pode ser removida por qualquer pessoa que abra o código-fonte da página. Serve como aviso de uso restrito, não como controle de acesso. Não publique a base de clientes em repositório público.
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app">
+<header class="top">
+  <div class="top-in">
+    <div class="logo">Inadimplência <span>/ Perinity</span></div>
+    <div class="top-meta">
+      <div>Base: <span class="mono" id="mFile">—</span></div>
+      <div>Referência: <span class="mono" id="mRef">—</span></div>
+      <div>Snapshots: <span class="mono" id="mSnaps">0</span></div>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <div class="tabs-in">
+    <button class="tab on" data-v="v-carteira">Carteira</button>
+    <button class="tab" data-v="v-aging">Aging</button>
+    <button class="tab" data-v="v-conc">Concentração</button>
+    <button class="tab" data-v="v-faixas">Faixas de valor</button>
+    <button class="tab" data-v="v-rating">Rating</button>
+    <button class="tab" data-v="v-fila">Fila de cobrança</button>
+    <button class="tab" data-v="v-hist">Histórico</button>
+    <button class="tab" data-v="v-qual">Qualidade da base</button>
+    <button class="tab" data-v="v-base">Títulos</button>
+    <button class="tab" data-v="v-metodo">Metodologia</button>
+  </div>
+</nav>
+
+<main>
+  <!-- carregador -->
+  <div class="card" id="loaderCard">
+    <div class="card-b">
+      <div id="drop">
+        <h3>Solte a planilha aqui</h3>
+        <p>Exportação padrão do Omie — Base Contas a Receber Contas por Período (.xlsx). O layout deve seguir o mesmo padrão.</p>
+        <input type="file" id="file" accept=".xlsx,.xls,.csv" hidden>
+        <button class="btn pri" id="pick">Escolher arquivo</button>
+        <button class="btn" id="tryFetch">Carregar dados.xlsx do repositório</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- filtros -->
+  <div class="card" id="filterCard" style="display:none">
+    <div class="card-b">
+      <div class="filters">
+        <div class="fg">
+          <label for="fRef">Data de referência</label>
+          <input type="date" id="fRef">
+        </div>
+        <div class="fg">
+          <label for="fCat">Categoria</label>
+          <select id="fCat"><option value="">Todas</option></select>
+        </div>
+        <div class="fg">
+          <label for="fBucket">Faixa de aging</label>
+          <select id="fBucket"><option value="">Todas</option></select>
+        </div>
+        <div class="fg">
+          <label for="fMin">Saldo mínimo (R$)</label>
+          <input type="number" id="fMin" value="0" min="0" step="100">
+        </div>
+        <div class="fg">
+          <label for="fQ">Cliente / CNPJ / NF</label>
+          <input type="text" id="fQ" placeholder="buscar...">
+        </div>
+        <div class="fg">
+          <label for="fVenc">Títulos a vencer</label>
+          <select id="fVenc">
+            <option value="excl">Excluir</option>
+            <option value="incl">Incluir</option>
+          </select>
+        </div>
+        <div class="ml" style="display:flex;gap:8px">
+          <button class="btn" id="btnReset">Limpar filtros</button>
+          <button class="btn" id="btnSnap">Gravar snapshot</button>
+          <button class="btn pri" id="btnXls">Exportar Excel</button>
+          <button class="btn" id="btnNew">Trocar base</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="view on" id="v-carteira"></div>
+  <div class="view" id="v-aging"></div>
+  <div class="view" id="v-conc"></div>
+  <div class="view" id="v-faixas"></div>
+  <div class="view" id="v-rating"></div>
+  <div class="view" id="v-fila"></div>
+  <div class="view" id="v-hist"></div>
+  <div class="view" id="v-qual"></div>
+  <div class="view" id="v-base"></div>
+  <div class="view" id="v-metodo"></div>
+</main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   CONFIG
+   ========================================================= */
+const PW_HASH = 'b88dc16d89c108e3dc86c6b5fbf309079e683bda1a0cf411f0c56e3a2571c6c8';
+const LS_HIST = 'perinity_inad_hist_v1';
+const LS_PECLD = 'perinity_inad_pecld_v1';
+
+const BUCKETS = [
+  {k:'AV',  lab:'A vencer',    min:-1e9, max:-1,  cor:'var(--r-av)',  pecld:0},
+  {k:'B30', lab:'1–30 dias',   min:0,    max:30,  cor:'var(--r-30)',  pecld:2},
+  {k:'B60', lab:'31–60 dias',  min:31,   max:60,  cor:'var(--r-60)',  pecld:5},
+  {k:'B90', lab:'61–90 dias',  min:61,   max:90,  cor:'var(--r-90)',  pecld:15},
+  {k:'B180',lab:'91–180 dias', min:91,   max:180, cor:'var(--r-180)', pecld:35},
+  {k:'B365',lab:'181–365 dias',min:181,  max:365, cor:'var(--r-365)', pecld:60},
+  {k:'BMX', lab:'> 365 dias',  min:366,  max:1e9, cor:'var(--r-max)', pecld:90}
+];
+const FAIXAS = [
+  {k:'F1', lab:'até R$ 1 mil',       min:-1e9, max:1000},
+  {k:'F2', lab:'R$ 1–5 mil',         min:1000, max:5000},
+  {k:'F3', lab:'R$ 5–10 mil',        min:5000, max:10000},
+  {k:'F4', lab:'R$ 10–25 mil',       min:10000,max:25000},
+  {k:'F5', lab:'R$ 25–50 mil',       min:25000,max:50000},
+  {k:'F6', lab:'acima de R$ 50 mil', min:50000,max:1e9}
+];
+
+/* =========================================================
+   UTIL
+   ========================================================= */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const brl = v => (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const brlC = v => (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+const num = (v,d=1) => (v||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct = (v,d=1) => num((v||0)*100,d)+'%';
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+const iso = d => d instanceof Date && !isNaN(d) ? d.toISOString().slice(0,10) : '';
+const brDate = d => d instanceof Date && !isNaN(d) ? d.toLocaleDateString('pt-BR') : '—';
+const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+const days = (a,b) => Math.round((a-b)/86400000);
+
+function toast(msg){
+  const t=$('#toast'); t.textContent=msg; t.classList.add('on');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),2600);
+}
+function lsGet(k,f){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):f; }catch(e){ return f; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }
+
+let LS_OK = true;
+try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); }catch(e){ LS_OK=false; }
+
+/* =========================================================
+   ESTADO
+   ========================================================= */
+const S = {
+  raw: [],        // títulos normalizados
+  rows: [],       // títulos após filtro
+  file: '',
+  ref: new Date(),
+  hist: [],
+  pecld: {},
+  sort: {},
+  issues: []
+};
+
+/* =========================================================
+   PORTA
+   ========================================================= */
+async function sha256(str){
+  if(window.crypto && crypto.subtle){
+    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
+  }
+  return null;
+}
+async function tryLogin(){
+  const v = $('#pw').value;
+  const h = await sha256(v);
+  const ok = h ? h===PW_HASH : v==='Perinity@2026!';
+  if(ok){
+    sessionStorage.setItem('perinity_auth','1');
+    $('#gate').style.display='none';
+    $('#app').style.display='block';
+    boot();
+  } else {
+    $('#pwErr').textContent='Senha incorreta.';
+    $('#pw').value=''; $('#pw').focus();
+  }
+}
+$('#pwBtn').addEventListener('click',tryLogin);
+$('#pw').addEventListener('keydown',e=>{ if(e.key==='Enter') tryLogin(); });
+if(sessionStorage.getItem('perinity_auth')==='1'){
+  $('#gate').style.display='none'; $('#app').style.display='block';
+}
+
+/* =========================================================
+   PARSE
+   ========================================================= */
+const COLMAP = {
+  situacao:    ['situacao'],
+  tipo:        ['tipo'],
+  razao:       ['cliente ou fornecedor (razao social)','razao social'],
+  fantasia:    ['cliente ou fornecedor (nome fantasia)','nome fantasia'],
+  emissao:     ['data de emissao (completa)','data de emissao'],
+  recbto:      ['ultima data de pagto ou recbto (completa)'],
+  sitVenc:     ['situacao do vencimento'],
+  cnpj:        ['cnpj/cpf','cnpj'],
+  vlLiq:       ['valor liquido'],
+  pago:        ['pago ou recebido'],
+  saldo:       ['a pagar ou receber'],
+  categoria:   ['categoria'],
+  tags:        ['tags'],
+  depto:       ['departamento'],
+  nf:          ['nf/cf','nf'],
+  venc:        ['data de vencimento (completa)','data de vencimento']
+};
+
+function findHeader(aoa){
+  for(let i=0;i<Math.min(15,aoa.length);i++){
+    const r = (aoa[i]||[]).map(norm);
+    if(r.some(c=>c.includes('razao social')) || (r.includes('situacao') && r.some(c=>c.includes('vencimento')))) return i;
+  }
+  return 0;
+}
+function resolveCols(header){
+  const H = header.map(norm);
+  const out = {};
+  for(const [key,cands] of Object.entries(COLMAP)){
+    let idx = -1;
+    for(const c of cands){
+      idx = H.findIndex(h=>h===c);
+      if(idx>=0) break;
+      idx = H.findIndex(h=>h.includes(c));
+      if(idx>=0) break;
+    }
+    out[key]=idx;
+  }
+  return out;
+}
+function parseNum(v){
+  if(v==null||v==='') return 0;
+  if(typeof v==='number') return v;
+  let s = String(v).replace(/[R$\s\u00A0]/g,'');
+  if(s.includes(',')) s = s.replace(/\./g,'').replace(',','.');
+  const n = parseFloat(s);
+  return isNaN(n)?0:n;
+}
+function parseDate(v){
+  if(v instanceof Date && !isNaN(v)) return new Date(v.getFullYear(),v.getMonth(),v.getDate());
+  if(typeof v==='number'){
+    const d = XLSX.SSF.parse_date_code(v);
+    if(d) return new Date(d.y,d.m-1,d.d);
+  }
+  if(typeof v==='string'){
+    const s=v.trim();
+    let m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    if(m) return new Date(+m[3],+m[2]-1,+m[1]);
+    m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(m) return new Date(+m[1],+m[2]-1,+m[3]);
+  }
+  return null;
+}
+
+function parseWorkbook(ab, fname){
+  const wb = XLSX.read(ab,{cellDates:true});
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const aoa = XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true,blankrows:false});
+  if(!aoa.length) throw new Error('Planilha vazia.');
+  const hi = findHeader(aoa);
+  const C = resolveCols(aoa[hi]);
+  const faltando = ['razao','saldo','venc'].filter(k=>C[k]<0);
+  if(faltando.length) throw new Error('Colunas não encontradas: '+faltando.join(', ')+'. O layout da exportação mudou.');
+
+  const rows = [];
+  for(let i=hi+1;i<aoa.length;i++){
+    const r = aoa[i]; if(!r) continue;
+    const razao = r[C.razao];
+    if(!razao || !String(razao).trim()) continue;
+    const tipo = C.tipo>=0 ? String(r[C.tipo]??'') : '';
+    if(tipo && !norm(tipo).includes('receber')) continue;
+
+    const vlLiq = parseNum(r[C.vlLiq]);
+    const pago  = parseNum(r[C.pago]);
+    let saldo   = C.saldo>=0 ? parseNum(r[C.saldo]) : (vlLiq-pago);
+    const venc  = parseDate(r[C.venc]);
+    const emis  = C.emissao>=0 ? parseDate(r[C.emissao]) : null;
+    const cnpj  = C.cnpj>=0 ? String(r[C.cnpj]??'').trim() : '';
+    const nf    = C.nf>=0 ? String(r[C.nf]??'').trim() : '';
+    const fant  = C.fantasia>=0 ? String(r[C.fantasia]??'').trim() : '';
+
+    rows.push({
+      situacao: C.situacao>=0?String(r[C.situacao]??'').trim():'',
+      razao: String(razao).trim(),
+      fantasia: fant || String(razao).trim(),
+      cnpj,
+      chave: cnpj || norm(razao),
+      emissao: emis,
+      venc,
+      sitVencOrig: C.sitVenc>=0?String(r[C.sitVenc]??'').trim():'',
+      vlLiq, pago, saldo,
+      categoria: C.categoria>=0?String(r[C.categoria]??'').trim():'—',
+      tags: C.tags>=0?String(r[C.tags]??'').trim():'',
+      nf,
+      tid: [nf, iso(venc), vlLiq.toFixed(2)].join('|'),
+      linha: i+1
+    });
+  }
+  if(!rows.length) throw new Error('Nenhum título de contas a receber encontrado.');
+  S.file = fname;
+  S.raw = rows;
+  return rows;
+}
+
+/* =========================================================
+   CÁLCULO
+   ========================================================= */
+function bucketOf(d){ return BUCKETS.find(b=>d>=b.min&&d<=b.max) || BUCKETS[BUCKETS.length-1]; }
+function faixaOf(v){ return FAIXAS.find(f=>v>f.min&&v<=f.max) || FAIXAS[0]; }
+
+function enrich(){
+  const ref = S.ref;
+  S.raw.forEach(r=>{
+    r.atraso = r.venc ? days(ref, r.venc) : 0;
+    r.bucket = bucketOf(r.atraso);
+    r.faixa  = faixaOf(r.saldo);
+    r.pecld  = r.saldo * ((S.pecld[r.bucket.k] ?? r.bucket.pecld)/100);
+  });
+}
+function byClient(rows){
+  const m = new Map();
+  rows.forEach(r=>{
+    let c = m.get(r.chave);
+    if(!c){
+      c = {chave:r.chave, nome:r.fantasia, razao:r.razao, cnpj:r.cnpj, saldo:0, titulos:0,
+           somaPond:0, maxAtraso:-1e9, minAtraso:1e9, buckets:{}, cats:new Set(), tids:[], pecld:0};
+      m.set(r.chave,c);
+    }
+    c.saldo += r.saldo;
+    c.pecld += r.pecld;
+    c.titulos++;
+    c.somaPond += r.atraso*r.saldo;
+    c.maxAtraso = Math.max(c.maxAtraso,r.atraso);
+    c.minAtraso = Math.min(c.minAtraso,r.atraso);
+    c.buckets[r.bucket.k] = (c.buckets[r.bucket.k]||0)+r.saldo;
+    c.cats.add(r.categoria);
+    c.tids.push(r.tid);
+  });
+  const arr = Array.from(m.values());
+  arr.forEach(c=>{
+    c.atrasoPond = c.saldo>0 ? c.somaPond/c.saldo : 0;
+    c.spread = c.maxAtraso-c.minAtraso;
+    c.cats = Array.from(c.cats);
+  });
+  return arr.sort((a,b)=>b.saldo-a.saldo);
+}
+function agg(rows){
+  const total = rows.reduce((s,r)=>s+r.saldo,0);
+  const pecldTot = rows.reduce((s,r)=>s+r.pecld,0);
+  const cli = byClient(rows);
+  const bk = BUCKETS.map(b=>{
+    const rs = rows.filter(r=>r.bucket.k===b.k);
+    const v = rs.reduce((s,r)=>s+r.saldo,0);
+    return {...b, valor:v, qtd:rs.length, part: total?v/total:0, clientes:new Set(rs.map(r=>r.chave)).size};
+  });
+  const fx = FAIXAS.map(f=>{
+    const rs = rows.filter(r=>r.faixa.k===f.k);
+    const v = rs.reduce((s,r)=>s+r.saldo,0);
+    return {...f, valor:v, qtd:rs.length, part: total?v/total:0};
+  });
+  const shares = cli.map(c=>total?c.saldo/total:0);
+  const hhi = shares.reduce((s,x)=>s+x*x,0)*10000;
+  let acc=0; cli.forEach(c=>{ acc+=total?c.saldo/total:0; c.acum=acc; c.abc = acc<=0.8?'A':(acc<=0.95?'B':'C'); });
+  const atrasoPond = total ? rows.reduce((s,r)=>s+r.atraso*r.saldo,0)/total : 0;
+  const v90 = rows.filter(r=>r.atraso>90).reduce((s,r)=>s+r.saldo,0);
+  const v365 = rows.filter(r=>r.atraso>365).reduce((s,r)=>s+r.saldo,0);
+  return {
+    total, pecldTot, cli, bk, fx, hhi, atrasoPond, v90, v365,
+    qtd: rows.length,
+    nCli: cli.length,
+    top5: cli.slice(0,5).reduce((s,c)=>s+c.saldo,0),
+    top10: cli.slice(0,10).reduce((s,c)=>s+c.saldo,0),
+    ticketTit: rows.length?total/rows.length:0,
+    ticketCli: cli.length?total/cli.length:0
+  };
+}
+
+/* =========================================================
+   RATING
+   ========================================================= */
+const ANCH = [[-1e9,100],[0,100],[15,90],[30,82],[60,68],[90,55],[180,35],[365,15],[730,3],[1e9,0]];
+function interp(x,anchors){
+  for(let i=0;i<anchors.length-1;i++){
+    const [x1,y1]=anchors[i], [x2,y2]=anchors[i+1];
+    if(x>=x1&&x<=x2){ if(x2===x1) return y1; return y1+(y2-y1)*(x-x1)/(x2-x1); }
+  }
+  return anchors[anchors.length-1][1];
+}
+const W = { sev:35, acu:15, cro:20, ten:12, cur:18 };
+
+function computeRating(cli, hist){
+  const snaps = hist.slice().sort((a,b)=>a.ref.localeCompare(b.ref));
+  return cli.map(c=>{
+    const comp = {};
+    // 1. severidade — sempre disponível
+    comp.sev = clamp(interp(c.atrasoPond, ANCH),0,100);
+    // 2. acúmulo — sempre disponível
+    const pT = clamp((c.titulos-1)/9,0,1);
+    const pS = clamp(c.spread/365,0,1);
+    comp.acu = clamp(100*(1-(pT*0.5+pS*0.5)),0,100);
+
+    // histórico do cliente
+    const mine = snaps.map(s=>({ref:s.ref, c:(s.clients||{})[c.chave]})).filter(x=>true);
+    const firstIdx = mine.findIndex(x=>x.c);
+    const rel = firstIdx>=0 ? mine.slice(firstIdx) : [];
+    const denom = rel.length;
+    const apps = rel.filter(x=>x.c).length;
+
+    // 3. cronicidade — exige >=2 snapshots desde a 1ª aparição
+    if(denom>=2){
+      comp.cro = clamp(100*(1-apps/denom),0,100);
+    }
+    // 4. tendência — exige snapshot anterior com saldo
+    const prev = [...rel].reverse().find((x,i)=>i>0 && x.c);
+    if(prev && prev.c && prev.c.saldo>0){
+      const delta = (c.saldo - prev.c.saldo)/prev.c.saldo;
+      comp.ten = clamp(interp(delta,[[-1e9,100],[-0.5,100],[0,50],[0.5,0],[1e9,0]]),0,100);
+      c.deltaSaldo = delta;
+      c.saldoAnt = prev.c.saldo;
+    }
+    // 5. cura — títulos que sumiram entre snapshots consecutivos
+    let res=0, base=0;
+    for(let i=0;i<rel.length-1;i++){
+      const a=rel[i].c, b=rel[i+1].c;
+      if(!a || !a.tids || !a.tids.length) continue;
+      const setB = new Set(b&&b.tids?b.tids:[]);
+      res += a.tids.filter(t=>!setB.has(t)).length;
+      base += a.tids.length;
+    }
+    if(base>0){
+      const cure = res/base;
+      comp.cur = clamp(interp(cure,[[0,0],[0.25,45],[0.5,75],[0.75,92],[1,100]]),0,100);
+      c.cureRate = cure;
+    }
+
+    const avail = Object.keys(comp);
+    const wsum = avail.reduce((s,k)=>s+W[k],0);
+    const score = wsum ? avail.reduce((s,k)=>s+comp[k]*W[k],0)/wsum : 50;
+    c.score = score;
+    c.comp = comp;
+    c.rating = score>=80?'A':score>=65?'B':score>=50?'C':score>=35?'D':'E';
+    c.provisorio = !('cro' in comp) && !('cur' in comp);
+    c.priScore = c.saldo*(1-score/100);
+    return c;
+  });
+}
+
+/* =========================================================
+   HISTÓRICO
+   ========================================================= */
+function snapshot(rows, ref, file){
+  const cli = byClient(rows);
+  const clients = {};
+  cli.forEach(c=>{
+    clients[c.chave] = {
+      nome:c.nome, cnpj:c.cnpj, saldo:+c.saldo.toFixed(2), titulos:c.titulos,
+      atrasoPond:+c.atrasoPond.toFixed(1), maxAtraso:c.maxAtraso, tids:c.tids
+    };
+  });
+  return {
+    id: 'S'+Date.now(),
+    ref: iso(ref),
+    createdAt: new Date().toISOString(),
+    file,
+    totals: { saldo:+rows.reduce((s,r)=>s+r.saldo,0).toFixed(2), titulos:rows.length, clientes:cli.length,
+              atrasoPond:+(rows.reduce((s,r)=>s+r.atraso*r.saldo,0)/(rows.reduce((s,r)=>s+r.saldo,0)||1)).toFixed(1) },
+    clients
+  };
+}
+function saveSnap(){
+  const snap = snapshot(S.rows, S.ref, S.file);
+  const i = S.hist.findIndex(h=>h.ref===snap.ref);
+  if(i>=0){
+    if(!confirm('Já existe um snapshot com data de referência '+brDate(S.ref)+'. Substituir?')) return;
+    S.hist[i]=snap;
+  } else S.hist.push(snap);
+  S.hist.sort((a,b)=>a.ref.localeCompare(b.ref));
+  if(LS_OK && lsSet(LS_HIST,S.hist)) toast('Snapshot gravado. '+S.hist.length+' na série.');
+  else toast('Snapshot gravado só nesta sessão — exporte o JSON para não perder.');
+  render();
+}
+function delSnap(id){
+  if(!confirm('Excluir este snapshot? O rating será recalculado.')) return;
+  S.hist = S.hist.filter(h=>h.id!==id);
+  lsSet(LS_HIST,S.hist); render(); toast('Snapshot excluído.');
+}
+function exportHist(){
+  const blob = new Blob([JSON.stringify({v:1,exported:new Date().toISOString(),hist:S.hist},null,1)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='historico-inadimplencia-'+iso(new Date())+'.json';
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function importHist(f){
+  const fr=new FileReader();
+  fr.onload=()=>{
+    try{
+      const d=JSON.parse(fr.result);
+      const h=Array.isArray(d)?d:d.hist;
+      if(!Array.isArray(h)) throw new Error('formato');
+      const map=new Map(S.hist.map(x=>[x.ref,x]));
+      h.forEach(x=>{ if(x&&x.ref&&x.clients) map.set(x.ref,x); });
+      S.hist=Array.from(map.values()).sort((a,b)=>a.ref.localeCompare(b.ref));
+      lsSet(LS_HIST,S.hist); render(); toast('Histórico importado: '+S.hist.length+' snapshots.');
+    }catch(e){ toast('Arquivo de histórico inválido.'); }
+  };
+  fr.readAsText(f);
+}
+/* =========================================================
+   COMPONENTES DE RENDER
+   ========================================================= */
+function spine(bk, total, mini){
+  const cls = mini?'spine-mini':'spine';
+  const segs = bk.filter(b=>b.valor>0).map(b=>{
+    const w = total? (b.valor/total*100):0;
+    const t = mini?'':`title="${b.lab}: ${brl(b.valor)} (${pct(b.part)})"`;
+    return `<i style="width:${w}%;background:${b.cor}" ${t}></i>`;
+  }).join('');
+  return `<div class="${cls}">${segs||'<i style="width:100%;background:var(--line-soft)"></i>'}</div>`;
+}
+function spineLegend(bk,total){
+  return `<div class="spine-leg">${bk.filter(b=>b.qtd>0).map(b=>
+    `<div><b style="background:${b.cor}"></b>${b.lab} · <span class="v">${brlC(b.valor)}</span> · ${pct(b.part,0)} · ${b.qtd}t</div>`
+  ).join('')}</div>`;
+}
+function clientSpine(c){
+  const bk = BUCKETS.map(b=>({...b, valor:c.buckets[b.k]||0}));
+  return spine(bk, c.saldo, true);
+}
+function kpi(lab,val,sub,cls){
+  return `<div class="kpi"><div class="lab">${lab}</div><div class="val ${cls||''}">${val}</div>${sub?`<div class="sub">${sub}</div>`:''}</div>`;
+}
+function card(title,hint,body,extra){
+  return `<div class="card"><div class="card-h"><h2>${title}</h2>${hint?`<span class="hint">${hint}</span>`:''}${extra||''}</div>${body}</div>`;
+}
+function ratingBadge(c){
+  return `<span class="rt ${c.rating}" title="Score ${num(c.score,0)}">${c.rating}</span>` +
+         (c.provisorio?' <span class="pill prov" title="Sem histórico suficiente: rating calculado só com severidade e acúmulo">prov</span>':'');
+}
+
+/* ---------- gráficos SVG ---------- */
+function barsChart(items, opts){
+  const w=opts.w||880, bh=26, gap=8, pad={l:opts.l||150,r:90,t:6,b:6};
+  const h = pad.t+pad.b+items.length*(bh+gap);
+  const max = Math.max(...items.map(i=>i.v),1);
+  const bw = w-pad.l-pad.r;
+  const bars = items.map((it,i)=>{
+    const y = pad.t+i*(bh+gap);
+    const bwid = Math.max(1, it.v/max*bw);
+    return `
+      <text x="${pad.l-10}" y="${y+bh/2+4}" text-anchor="end" font-size="11" fill="var(--ink)">${esc(it.lab)}</text>
+      <rect x="${pad.l}" y="${y}" width="${bwid}" height="${bh}" fill="${it.cor||'var(--accent)'}" rx="2"/>
+      <text x="${pad.l+bwid+8}" y="${y+bh/2+4}" font-size="11">${it.rot}</text>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" role="img">${bars}</svg>`;
+}
+function paretoChart(cli, total){
+  const top = cli.slice(0,15);
+  if(!top.length) return '<div class="empty">Sem dados.</div>';
+  const w=880,h=280,pad={l:52,r:44,t:14,b:76};
+  const iw=w-pad.l-pad.r, ih=h-pad.t-pad.b;
+  const max=Math.max(...top.map(c=>c.saldo),1);
+  const bw=iw/top.length;
+  let acc=0;
+  const pts=[];
+  const bars=top.map((c,i)=>{
+    acc+=c.saldo/total;
+    const bh=c.saldo/max*ih;
+    const x=pad.l+i*bw, y=pad.t+ih-bh;
+    pts.push([x+bw/2, pad.t+ih-acc*ih]);
+    const nm = c.nome.length>16?c.nome.slice(0,15)+'…':c.nome;
+    return `<rect x="${x+bw*0.16}" y="${y}" width="${bw*0.68}" height="${bh}" fill="var(--accent)" rx="2">
+      <title>${esc(c.nome)}: ${brl(c.saldo)} — ${pct(c.saldo/total)} — acum. ${pct(acc)}</title></rect>
+      <text x="${x+bw/2}" y="${pad.t+ih+14}" font-size="9" text-anchor="end" transform="rotate(-42 ${x+bw/2} ${pad.t+ih+14})">${esc(nm)}</text>`;
+  }).join('');
+  const line=`<polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="var(--r-90)" stroke-width="2"/>`
+    + pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="2.6" fill="var(--r-90)"/>`).join('');
+  const y80=pad.t+ih-0.8*ih;
+  const gl=[0,.25,.5,.75,1].map(g=>`<line x1="${pad.l}" y1="${pad.t+ih-g*ih}" x2="${pad.l+iw}" y2="${pad.t+ih-g*ih}" stroke="var(--line-soft)"/>
+    <text x="${pad.l-8}" y="${pad.t+ih-g*ih+3}" font-size="9" text-anchor="end">${brlC(max*g)}</text>
+    <text x="${pad.l+iw+8}" y="${pad.t+ih-g*ih+3}" font-size="9">${num(g*100,0)}%</text>`).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" role="img">
+    ${gl}
+    <line x1="${pad.l}" y1="${y80}" x2="${pad.l+iw}" y2="${y80}" stroke="var(--r-365)" stroke-dasharray="4 3" stroke-width="1"/>
+    <text x="${pad.l+iw+8}" y="${y80-4}" font-size="9" fill="var(--r-365)">80%</text>
+    ${bars}${line}</svg>`;
+}
+function serieChart(hist){
+  const w=880,h=230,pad={l:64,r:56,t:14,b:34};
+  const iw=w-pad.l-pad.r, ih=h-pad.t-pad.b;
+  const max=Math.max(...hist.map(s=>s.totals.saldo),1)*1.1;
+  const maxD=Math.max(...hist.map(s=>s.totals.atrasoPond||0),1)*1.15;
+  const bw=iw/hist.length;
+  const bars=hist.map((s,i)=>{
+    const bh=s.totals.saldo/max*ih;
+    const x=pad.l+i*bw;
+    return `<rect x="${x+bw*0.24}" y="${pad.t+ih-bh}" width="${bw*0.52}" height="${bh}" fill="var(--accent)" rx="2">
+      <title>${s.ref}: ${brl(s.totals.saldo)} · ${s.totals.titulos} títulos · ${s.totals.clientes} clientes</title></rect>
+      <text x="${x+bw/2}" y="${pad.t+ih+16}" font-size="9" text-anchor="middle">${s.ref.slice(8,10)}/${s.ref.slice(5,7)}</text>`;
+  }).join('');
+  const pts=hist.map((s,i)=>[pad.l+i*bw+bw/2, pad.t+ih-(s.totals.atrasoPond||0)/maxD*ih]);
+  const line=`<polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="var(--r-180)" stroke-width="2"/>`
+    +pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="var(--r-180)"><title>${num(hist[i].totals.atrasoPond,0)} dias</title></circle>`).join('');
+  const gl=[0,.5,1].map(g=>`<line x1="${pad.l}" y1="${pad.t+ih-g*ih}" x2="${pad.l+iw}" y2="${pad.t+ih-g*ih}" stroke="var(--line-soft)"/>
+    <text x="${pad.l-8}" y="${pad.t+ih-g*ih+3}" font-size="9" text-anchor="end">${brlC(max*g)}</text>
+    <text x="${pad.l+iw+8}" y="${pad.t+ih-g*ih+3}" font-size="9" fill="var(--r-180)">${num(maxD*g,0)}d</text>`).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" role="img">${gl}${bars}${line}</svg>`;
+}
+
+/* ---------- tabela ordenável ---------- */
+function sortable(id, cols, data, rowFn){
+  const st = S.sort[id] || {k:cols.find(c=>c.def)?.k, dir:'desc'};
+  S.sort[id]=st;
+  const col = cols.find(c=>c.k===st.k);
+  const d = data.slice();
+  if(col){
+    d.sort((a,b)=>{
+      const va=col.val(a), vb=col.val(b);
+      const r = typeof va==='string' ? va.localeCompare(vb,'pt-BR') : (va-vb);
+      return st.dir==='asc'?r:-r;
+    });
+  }
+  const th = cols.map(c=>`<th class="s ${c.num?'num':''} ${st.k===c.k?st.dir:''}" data-t="${id}" data-k="${c.k}">${c.lab}</th>`).join('');
+  return `<div class="tw"><table><thead><tr>${th}</tr></thead><tbody>${d.map(rowFn).join('')}</tbody></table></div>`;
+}
+document.addEventListener('click',e=>{
+  const th=e.target.closest('th.s'); if(!th) return;
+  const id=th.dataset.t, k=th.dataset.k;
+  const st=S.sort[id];
+  if(st.k===k) st.dir = st.dir==='asc'?'desc':'asc';
+  else { st.k=k; st.dir='desc'; }
+  render();
+});
+
+/* =========================================================
+   VIEWS
+   ========================================================= */
+function vCarteira(A){
+  const nA = A.cli.filter(c=>c.rating==='A').length, nB=A.cli.filter(c=>c.rating==='B').length,
+        nC = A.cli.filter(c=>c.rating==='C').length, nD=A.cli.filter(c=>c.rating==='D').length,
+        nE = A.cli.filter(c=>c.rating==='E').length;
+  const vDE = A.cli.filter(c=>c.rating==='D'||c.rating==='E').reduce((s,c)=>s+c.saldo,0);
+
+  let html = card('Posição da carteira','saldo em aberto após filtros',
+    `<div class="kpis">
+      ${kpi('Saldo em aberto',brlC(A.total),A.qtd+' títulos · '+A.nCli+' clientes')}
+      ${kpi('Atraso médio ponderado',num(A.atrasoPond,0)+' d','ponderado por saldo', A.atrasoPond>90?'bad':A.atrasoPond>45?'warn':'ok')}
+      ${kpi('Vencido > 90 dias',brlC(A.v90),pct(A.total?A.v90/A.total:0,0)+' da carteira', (A.v90/(A.total||1))>0.4?'bad':'warn')}
+      ${kpi('Vencido > 365 dias',brlC(A.v365),pct(A.total?A.v365/A.total:0,0)+' da carteira', A.v365>0?'bad':'ok')}
+      ${kpi('PECLD estimada',brlC(A.pecldTot),pct(A.total?A.pecldTot/A.total:0,0)+' do saldo · premissa','warn')}
+      ${kpi('Concentração top 10',pct(A.total?A.top10/A.total:0,0),'HHI '+num(A.hhi,0))}
+      ${kpi('Ticket médio / título',brlC(A.ticketTit),'por cliente '+brlC(A.ticketCli))}
+      ${kpi('Clientes D+E',nD+nE,brlC(vDE)+' expostos', (nD+nE)>0?'bad':'ok')}
+    </div>`);
+
+  html += card('Espinha de aging','composição do saldo por faixa de atraso',
+    `<div class="card-b">${spine(A.bk,A.total)}${spineLegend(A.bk,A.total)}</div>`);
+
+  const partAV = A.total?A.v90/A.total:0;
+  if(partAV>0.4) html += `<div class="card"><div class="card-b"><div class="note bad"><b>${pct(partAV,0)} da carteira vencida está há mais de 90 dias.</b> Nessa faixa a recuperação espontânea cai muito e a discussão deixa de ser régua de cobrança: é decisão sobre provisão, suspensão de serviço e encerramento. ${A.v365>0?'Há ainda '+brlC(A.v365)+' com mais de um ano de atraso — valor que provavelmente já deveria estar provisionado ou baixado.':''}</div></div></div>`;
+
+  const ratingDist = [
+    {lab:'A — atraso leve',v:A.cli.filter(c=>c.rating==='A').reduce((s,c)=>s+c.saldo,0),n:nA,cor:'var(--r-av)'},
+    {lab:'B — atenção',v:A.cli.filter(c=>c.rating==='B').reduce((s,c)=>s+c.saldo,0),n:nB,cor:'#5D9B2E'},
+    {lab:'C — risco',v:A.cli.filter(c=>c.rating==='C').reduce((s,c)=>s+c.saldo,0),n:nC,cor:'var(--r-30)'},
+    {lab:'D — crítico',v:A.cli.filter(c=>c.rating==='D').reduce((s,c)=>s+c.saldo,0),n:nD,cor:'var(--r-90)'},
+    {lab:'E — severo',v:A.cli.filter(c=>c.rating==='E').reduce((s,c)=>s+c.saldo,0),n:nE,cor:'var(--r-365)'}
+  ];
+  html += `<div class="grid2">
+    ${card('Saldo por rating','',`<div class="card-b">${barsChart(ratingDist.map(r=>({lab:r.lab,v:r.v,cor:r.cor,rot:brlC(r.v)+'  ·  '+r.n+' cli'})),{l:120})}</div>`)}
+    ${card('Saldo por categoria','',(()=>{
+      const m={}; S.rows.forEach(r=>m[r.categoria]=(m[r.categoria]||0)+r.saldo);
+      const it=Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({lab:k.replace('Clientes - ',''),v,rot:brlC(v)+'  ·  '+pct(v/(A.total||1),0)}));
+      return `<div class="card-b">${barsChart(it,{l:210})}</div>`;
+    })())}
+  </div>`;
+
+  const top = A.cli.slice(0,15);
+  html += card('Maiores exposições','top 15 por saldo em aberto',
+    sortable('topcli',[
+      {k:'nome',lab:'Cliente',val:c=>c.nome},
+      {k:'saldo',lab:'Saldo',num:1,def:1,val:c=>c.saldo},
+      {k:'part',lab:'% carteira',num:1,val:c=>c.saldo/(A.total||1)},
+      {k:'acum',lab:'% acum.',num:1,val:c=>c.acum},
+      {k:'tit',lab:'Títulos',num:1,val:c=>c.titulos},
+      {k:'atr',lab:'Atraso méd.',num:1,val:c=>c.atrasoPond},
+      {k:'perfil',lab:'Perfil de aging',val:c=>c.atrasoPond},
+      {k:'rt',lab:'Rating',val:c=>c.score}
+    ], top, c=>`<tr>
+      <td class="cli">${esc(c.nome)}<small>${esc(c.cnpj||'sem CNPJ')}</small></td>
+      <td class="num">${brl(c.saldo)}</td>
+      <td class="num">${pct(c.saldo/(A.total||1))}</td>
+      <td class="num">${pct(c.acum,0)} <span class="abc ${c.abc}">${c.abc}</span></td>
+      <td class="num">${c.titulos}</td>
+      <td class="num">${num(c.atrasoPond,0)} d</td>
+      <td>${clientSpine(c)}</td>
+      <td>${ratingBadge(c)}</td>
+    </tr>`));
+  return html;
+}
+
+function vAging(A){
+  let html = card('Aging da carteira','calculado a partir da data de vencimento contra a data de referência',
+    `<div class="card-b">${spine(A.bk,A.total)}${spineLegend(A.bk,A.total)}</div>`);
+
+  html += card('Faixas de atraso','', `<div class="tw"><table>
+    <thead><tr><th>Faixa</th><th class="num">Saldo</th><th class="num">% carteira</th><th class="num">Títulos</th>
+    <th class="num">Clientes</th><th class="num">Ticket médio</th><th class="num">% PECLD</th><th class="num">PECLD</th></tr></thead>
+    <tbody>${A.bk.map(b=>`<tr>
+      <td><span class="dot" style="background:${b.cor}"></span>${b.lab}</td>
+      <td class="num">${brl(b.valor)}</td>
+      <td class="num">${pct(b.part)}</td>
+      <td class="num">${b.qtd}</td>
+      <td class="num">${b.clientes}</td>
+      <td class="num">${b.qtd?brlC(b.valor/b.qtd):'—'}</td>
+      <td class="num"><input type="number" class="pecldIn" data-k="${b.k}" value="${S.pecld[b.k]??b.pecld}" min="0" max="100" step="1"
+        style="width:58px;text-align:right;border:1px solid var(--line);border-radius:4px;padding:2px 5px;font-family:var(--f-mono)"></td>
+      <td class="num">${brl(b.valor*((S.pecld[b.k]??b.pecld)/100))}</td>
+    </tr>`).join('')}
+    <tr style="font-weight:600;background:#F7F9FB">
+      <td>Total</td><td class="num">${brl(A.total)}</td><td class="num">100,0%</td>
+      <td class="num">${A.qtd}</td><td class="num">${A.nCli}</td><td class="num">${brlC(A.ticketTit)}</td>
+      <td class="num">${pct(A.total?A.pecldTot/A.total:0)}</td><td class="num">${brl(A.pecldTot)}</td></tr>
+    </tbody></table></div>
+    <div class="card-b"><div class="note"><b>Os percentuais de PECLD são premissa, não histórico.</b> Os valores padrão (2/5/15/35/60/90%) são plausíveis mas arbitrários. Para virar número contábil sob CPC 48, precisam ser calibrados com a taxa de recuperação observada por faixa — o que só existe depois de alguns snapshots gravados aqui. Edite os campos para simular.</div></div>`);
+
+  html += card('Concentração de atraso por cliente','clientes ordenados pelo atraso médio ponderado — só com saldo relevante',
+    sortable('agecli',[
+      {k:'nome',lab:'Cliente',val:c=>c.nome},
+      {k:'atr',lab:'Atraso médio',num:1,def:1,val:c=>c.atrasoPond},
+      {k:'max',lab:'Atraso máx.',num:1,val:c=>c.maxAtraso},
+      {k:'spread',lab:'Amplitude',num:1,val:c=>c.spread},
+      {k:'tit',lab:'Títulos',num:1,val:c=>c.titulos},
+      {k:'saldo',lab:'Saldo',num:1,val:c=>c.saldo},
+      {k:'perfil',lab:'Perfil',val:c=>c.atrasoPond}
+    ], A.cli, c=>`<tr>
+      <td class="cli">${esc(c.nome)}<small>${esc(c.cnpj)}</small></td>
+      <td class="num" style="color:${bucketOf(c.atrasoPond).cor};font-weight:600">${num(c.atrasoPond,0)} d</td>
+      <td class="num">${num(c.maxAtraso,0)} d</td>
+      <td class="num">${num(c.spread,0)} d</td>
+      <td class="num">${c.titulos}</td>
+      <td class="num">${brl(c.saldo)}</td>
+      <td>${clientSpine(c)}</td>
+    </tr>`));
+  return html;
+}
+
+function vConc(A){
+  const g = (n)=>A.cli.slice(0,n).reduce((s,c)=>s+c.saldo,0)/(A.total||1);
+  const nA=A.cli.filter(c=>c.abc==='A').length, nB=A.cli.filter(c=>c.abc==='B').length, nC=A.cli.filter(c=>c.abc==='C').length;
+  const hhiLab = A.hhi<1500?'baixa':A.hhi<2500?'moderada':'alta';
+  let html = card('Concentração','', `<div class="kpis">
+    ${kpi('Top 1',pct(g(1),0),A.cli[0]?A.cli[0].nome.slice(0,26):'—')}
+    ${kpi('Top 5',pct(g(5),0),brlC(A.top5))}
+    ${kpi('Top 10',pct(g(10),0),brlC(A.top10))}
+    ${kpi('HHI',num(A.hhi,0),'concentração '+hhiLab, A.hhi>2500?'bad':A.hhi>1500?'warn':'ok')}
+    ${kpi('Curva A',nA+' clientes','80% do saldo')}
+    ${kpi('Curva B',nB+' clientes','80–95% do saldo')}
+    ${kpi('Curva C',nC+' clientes','últimos 5% do saldo')}
+    ${kpi('Clientes',A.nCli,'na carteira vencida')}
+  </div>`);
+
+  html += card('Curva de Pareto','top 15 clientes · barras = saldo · linha = participação acumulada',
+    `<div class="card-b">${paretoChart(A.cli,A.total||1)}</div>`);
+
+  html += card('Ranking completo','classe A concentra até 80% do saldo acumulado',
+    sortable('conc',[
+      {k:'pos',lab:'#',num:1,val:c=>-A.cli.indexOf(c)},
+      {k:'nome',lab:'Cliente',val:c=>c.nome},
+      {k:'cat',lab:'Categoria',val:c=>c.cats.join()},
+      {k:'saldo',lab:'Saldo',num:1,def:1,val:c=>c.saldo},
+      {k:'part',lab:'%',num:1,val:c=>c.saldo/(A.total||1)},
+      {k:'acum',lab:'Acum.',num:1,val:c=>c.acum},
+      {k:'abc',lab:'ABC',val:c=>c.abc},
+      {k:'tit',lab:'Títulos',num:1,val:c=>c.titulos},
+      {k:'atr',lab:'Atraso',num:1,val:c=>c.atrasoPond},
+      {k:'rt',lab:'Rating',val:c=>c.score}
+    ], A.cli, c=>`<tr>
+      <td class="num">${A.cli.indexOf(c)+1}</td>
+      <td class="cli">${esc(c.nome)}<small>${esc(c.cnpj)}</small></td>
+      <td style="font-size:11px;color:var(--muted)">${esc(c.cats.map(x=>x.replace('Clientes - ','')).join(', ').slice(0,34))}</td>
+      <td class="num">${brl(c.saldo)}</td>
+      <td class="num">${pct(c.saldo/(A.total||1))}</td>
+      <td class="num"><div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+        <div class="bar-track" style="width:52px"><div class="bar-fill" style="width:${c.acum*100}%"></div></div>${pct(c.acum,0)}</div></td>
+      <td><span class="abc ${c.abc}">${c.abc}</span></td>
+      <td class="num">${c.titulos}</td>
+      <td class="num">${num(c.atrasoPond,0)} d</td>
+      <td>${ratingBadge(c)}</td>
+    </tr>`));
+  return html;
+}
+
+function vFaixas(A){
+  const acima25 = A.fx.filter(f=>f.min>=25000);
+  const v25 = acima25.reduce((s,f)=>s+f.valor,0), q25 = acima25.reduce((s,f)=>s+f.qtd,0);
+  const abaixo1 = A.fx[0];
+
+  let html = card('Priorização por faixa de valor','por título, não por cliente', `<div class="kpis">
+    ${kpi('Títulos ≥ R$ 25 mil',q25,pct(A.total?v25/A.total:0,0)+' do saldo em '+pct(A.qtd?q25/A.qtd:0,0)+' dos títulos')}
+    ${kpi('Saldo nesses títulos',brlC(v25),'foco de esforço de cobrança')}
+    ${kpi('Títulos ≤ R$ 1 mil',abaixo1.qtd,pct(abaixo1.part,1)+' do saldo — custo de cobrança pode superar o valor', 'warn')}
+    ${kpi('Ticket médio',brlC(A.ticketTit),'por título')}
+  </div>`);
+
+  html += card('Faixas de valor','', `<div class="tw"><table>
+    <thead><tr><th>Faixa</th><th class="num">Títulos</th><th class="num">% dos títulos</th><th class="num">Saldo</th>
+    <th class="num">% do saldo</th><th class="num">Atraso médio</th><th>Densidade de valor</th></tr></thead>
+    <tbody>${A.fx.map(f=>{
+      const rs=S.rows.filter(r=>r.faixa.k===f.k);
+      const ap = f.valor?rs.reduce((s,r)=>s+r.atraso*r.saldo,0)/f.valor:0;
+      return `<tr>
+        <td>${f.lab}</td>
+        <td class="num">${f.qtd}</td>
+        <td class="num">${pct(A.qtd?f.qtd/A.qtd:0,1)}</td>
+        <td class="num">${brl(f.valor)}</td>
+        <td class="num">${pct(f.part)}</td>
+        <td class="num" style="color:${bucketOf(ap).cor}">${num(ap,0)} d</td>
+        <td><div class="bar-track"><div class="bar-fill" style="width:${f.part*100}%"></div></div></td>
+      </tr>`;
+    }).join('')}</tbody></table></div>
+    <div class="card-b"><div class="note info">Leitura de eficiência: se poucos títulos concentram a maior parte do saldo, a fila de cobrança deve ser ordenada por valor × risco, não por antiguidade. Títulos abaixo de R$ 1 mil costumam ter custo marginal de cobrança maior que o retorno — candidatos a acordo automático, compensação em fatura seguinte ou baixa.</div></div>`);
+
+  html += card('Títulos ≥ R$ 25 mil','os maiores individuais, ordenados por saldo',
+    (()=>{
+      const big = S.rows.filter(r=>r.saldo>=25000).sort((a,b)=>b.saldo-a.saldo);
+      if(!big.length) return '<div class="empty">Nenhum título individual acima de R$ 25 mil nos filtros atuais.</div>';
+      return `<div class="tw"><table><thead><tr><th>Cliente</th><th>NF</th><th class="num">Vencimento</th>
+        <th class="num">Atraso</th><th class="num">Saldo</th><th>Faixa</th></tr></thead><tbody>
+        ${big.map(r=>`<tr><td class="cli">${esc(r.fantasia)}</td><td class="mono">${esc(r.nf)}</td>
+          <td class="num">${brDate(r.venc)}</td>
+          <td class="num" style="color:${r.bucket.cor};font-weight:600">${num(r.atraso,0)} d</td>
+          <td class="num">${brl(r.saldo)}</td>
+          <td><span class="dot" style="background:${r.bucket.cor}"></span>${r.bucket.lab}</td></tr>`).join('')}
+        </tbody></table></div>`;
+    })());
+  return html;
+}
+
+function vRating(A){
+  const dist = ['A','B','C','D','E'].map(g=>{
+    const cs=A.cli.filter(c=>c.rating===g);
+    return {g, n:cs.length, v:cs.reduce((s,c)=>s+c.saldo,0)};
+  });
+  const prov = A.cli.filter(c=>c.provisorio).length;
+  const nS = S.hist.length;
+
+  let html = '';
+  if(nS<2){
+    html += `<div class="card"><div class="card-b"><div class="note"><b>Rating em modo provisório.</b> Com ${nS} snapshot${nS===1?'':'s'} gravado${nS===1?'':'s'}, só dois dos cinco componentes têm dados: severidade do atraso e acúmulo de títulos. Cronicidade, tendência e cura precisam de pelo menos duas fotos da carteira em datas diferentes. Grave um snapshot a cada fechamento — o rating ganha significado a partir do terceiro.</div></div></div>`;
+  }
+  html += `<div class="card"><div class="card-b"><div class="note info"><b>Rating "A" não significa bom pagador.</b> Esta base contém apenas títulos vencidos — quem paga em dia nunca aparece aqui. O rating ordena clientes <b>dentro da carteira inadimplente</b>: "A" é o atraso mais leve e isolado entre os que estão atrasados, não um cliente saudável. Para comparar contra a carteira inteira seria preciso a base completa de contas a receber, com os títulos em dia.</div></div></div>`;
+  html += card('Distribuição de rating','', `<div class="kpis">
+    ${dist.map(d=>kpi('Rating '+d.g, d.n+' cli', brlC(d.v), d.g==='D'||d.g==='E'?'bad':d.g==='C'?'warn':'ok')).join('')}
+    ${kpi('Provisórios',prov,'sem histórico suficiente')}
+    ${kpi('Snapshots na série',nS,'grave a cada fechamento')}
+  </div>`);
+
+  html += card('Rating por cliente','clique para abrir a composição do score',
+    sortable('rating',[
+      {k:'rt',lab:'Rating',val:c=>c.score},
+      {k:'score',lab:'Score',num:1,val:c=>c.score},
+      {k:'nome',lab:'Cliente',val:c=>c.nome},
+      {k:'saldo',lab:'Saldo',num:1,def:1,val:c=>c.saldo},
+      {k:'sev',lab:'Severid.',num:1,val:c=>c.comp.sev??-1},
+      {k:'acu',lab:'Acúmulo',num:1,val:c=>c.comp.acu??-1},
+      {k:'cro',lab:'Cronic.',num:1,val:c=>c.comp.cro??-1},
+      {k:'ten',lab:'Tendên.',num:1,val:c=>c.comp.ten??-1},
+      {k:'cur',lab:'Cura',num:1,val:c=>c.comp.cur??-1},
+      {k:'mov',lab:'Δ saldo',num:1,val:c=>c.deltaSaldo??-99}
+    ], A.cli, c=>{
+      const cell=(k)=> c.comp[k]==null ? '<td class="num" style="color:var(--line)">—</td>'
+        : `<td class="num" style="color:${c.comp[k]<40?'var(--bad)':c.comp[k]<65?'var(--warn)':'var(--ok)'}">${num(c.comp[k],0)}</td>`;
+      const mov = c.deltaSaldo==null ? '<span style="color:var(--line)">—</span>'
+        : `<span class="pill ${c.deltaSaldo>0.02?'up':c.deltaSaldo<-0.02?'down':''}">${c.deltaSaldo>0?'+':''}${pct(c.deltaSaldo,0)}</span>`;
+      return `<tr>
+        <td>${ratingBadge(c)}</td>
+        <td class="num" style="font-weight:600">${num(c.score,0)}</td>
+        <td class="cli">${esc(c.nome)}<small>${esc(c.cnpj)}</small></td>
+        <td class="num">${brl(c.saldo)}</td>
+        ${cell('sev')}${cell('acu')}${cell('cro')}${cell('ten')}${cell('cur')}
+        <td class="num">${mov}</td>
+      </tr>`;
+    }));
+
+  const worst = A.cli.slice().sort((a,b)=>a.score-b.score).slice(0,6);
+  html += card('Composição do score — 6 piores','barra = pontuação do componente (0 pior, 100 melhor)',
+    `<div class="card-b grid3">${worst.map(c=>{
+      const rows=[['sev','Severidade'],['acu','Acúmulo'],['cro','Cronicidade'],['ten','Tendência'],['cur','Cura']]
+        .map(([k,l])=>{
+          if(c.comp[k]==null) return `<div class="comp"><span class="cn">${l}</span><span style="flex:1;color:var(--line);font-size:11px">sem dado</span><span class="cv">—</span></div>`;
+          const v=c.comp[k];
+          const cor = v<40?'var(--bad)':v<65?'var(--warn)':'var(--ok)';
+          return `<div class="comp"><span class="cn">${l}</span><span class="cb"><span class="cf" style="width:${v}%;background:${cor}"></span></span><span class="cv">${num(v,0)}</span></div>`;
+        }).join('');
+      return `<div style="border:1px solid var(--line-soft);border-radius:5px;padding:12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          ${ratingBadge(c)}
+          <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.nome)}</div>
+          <div style="font-size:11px;color:var(--muted)" class="mono">${brl(c.saldo)} · ${num(c.atrasoPond,0)}d · ${c.titulos}t</div></div>
+          <div class="mono" style="font-size:19px;font-weight:600">${num(c.score,0)}</div>
+        </div>${rows}</div>`;
+    }).join('')}</div>`);
+  return html;
+}
+
+function vFila(A){
+  const fila = A.cli.slice().sort((a,b)=>b.priScore-a.priScore);
+  const maxP = fila[0]?fila[0].priScore:1;
+  const top20 = fila.slice(0,20);
+  const cob20 = top20.reduce((s,c)=>s+c.saldo,0);
+  return card('Fila de cobrança','ordenada por saldo × risco — não por antiguidade',
+    `<div class="kpis">
+      ${kpi('Top 20 da fila',brlC(cob20),pct(A.total?cob20/A.total:0,0)+' do saldo total')}
+      ${kpi('Clientes na fila',A.nCli,'com saldo vencido')}
+      ${kpi('1º da fila',top20[0]?top20[0].nome.slice(0,22):'—',top20[0]?brlC(top20[0].saldo)+' · rating '+top20[0].rating:'')}
+    </div>
+    <div class="card-b"><div class="note info">A prioridade é <b>saldo × (1 − score/100)</b>. Separa o que o rating mede (probabilidade de o cliente não pagar) do que a fila mede (quanto se perde se ele não pagar). Um cliente rating E com R$ 800 fica atrás de um rating C com R$ 80 mil — e isso é intencional.</div></div>` +
+    sortable('fila',[
+      {k:'pri',lab:'Prioridade',num:1,def:1,val:c=>c.priScore},
+      {k:'nome',lab:'Cliente',val:c=>c.nome},
+      {k:'rt',lab:'Rating',val:c=>c.score},
+      {k:'saldo',lab:'Saldo',num:1,val:c=>c.saldo},
+      {k:'tit',lab:'Títulos',num:1,val:c=>c.titulos},
+      {k:'atr',lab:'Atraso méd.',num:1,val:c=>c.atrasoPond},
+      {k:'max',lab:'Mais antigo',num:1,val:c=>c.maxAtraso},
+      {k:'perfil',lab:'Perfil',val:c=>c.atrasoPond},
+      {k:'acao',lab:'Ação sugerida',val:c=>c.score}
+    ], fila, c=>{
+      const idx = fila.indexOf(c)+1;
+      const acao = c.maxAtraso>365 ? 'Avaliar baixa / jurídico'
+                 : c.score<35 ? 'Escalar — suspensão contratual'
+                 : c.score<50 ? 'Negociação formal com prazo'
+                 : c.score<65 ? 'Cobrança ativa'
+                 : 'Régua padrão';
+      const cor = c.score<35?'var(--r-365)':c.score<50?'var(--r-90)':c.score<65?'var(--r-30)':'var(--muted)';
+      return `<tr>
+        <td class="num"><div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+          <span style="color:var(--muted);font-size:10.5px">${idx}</span>
+          <div class="bar-track" style="width:48px"><div class="bar-fill" style="width:${c.priScore/maxP*100}%;background:var(--r-90)"></div></div>
+          <span style="width:28px">${num(c.priScore/maxP*100,0)}</span></div></td>
+        <td class="cli">${esc(c.nome)}<small>${esc(c.cnpj)}</small></td>
+        <td>${ratingBadge(c)}</td>
+        <td class="num" style="font-weight:600">${brl(c.saldo)}</td>
+        <td class="num">${c.titulos}</td>
+        <td class="num">${num(c.atrasoPond,0)} d</td>
+        <td class="num" style="color:${bucketOf(c.maxAtraso).cor}">${num(c.maxAtraso,0)} d</td>
+        <td>${clientSpine(c)}</td>
+        <td style="font-size:11.5px;color:${cor};font-weight:500">${acao}</td>
+      </tr>`;
+    }));
+}
+
+function vHist(A){
+  const h = S.hist;
+  let html = card('Série histórica','cada snapshot é uma foto da carteira numa data de referência',
+    `<div class="card-b" style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn pri" id="hSnap">Gravar snapshot da base atual</button>
+      <button class="btn" id="hExp" ${h.length?'':'disabled'}>Exportar histórico (JSON)</button>
+      <button class="btn" id="hImp">Importar histórico</button>
+      <input type="file" id="hImpF" accept=".json" hidden>
+      <button class="btn dan ml" id="hClr" ${h.length?'':'disabled'}>Apagar tudo</button>
+    </div>` +
+    (!LS_OK ? `<div class="card-b" style="padding-top:0"><div class="note bad"><b>Este navegador bloqueou o armazenamento local.</b> O histórico só existe nesta aba e some ao fechar. Exporte o JSON antes de sair. Isso costuma acontecer em pré-visualizações dentro de outra página — abra o arquivo direto ou pelo GitHub Pages.</div></div>` : '') +
+    (h.length<2 ? `<div class="empty">Grave pelo menos dois snapshots em datas diferentes para ver a evolução e liberar os componentes de cronicidade, tendência e cura no rating.</div>`
+      : `<div class="card-b">${serieChart(h)}
+         <div class="spine-leg" style="margin-top:8px">
+           <div><b style="background:var(--accent)"></b>Saldo em aberto</div>
+           <div><b style="background:var(--r-180)"></b>Atraso médio ponderado (eixo direito)</div>
+         </div></div>`));
+
+  html += card('Snapshots gravados', h.length+' na série',
+    !h.length ? '<div class="empty">Nenhum snapshot ainda.</div>' :
+    `<div class="tw"><table><thead><tr><th>Referência</th><th>Gravado em</th><th>Arquivo</th>
+      <th class="num">Saldo</th><th class="num">Δ vs anterior</th><th class="num">Títulos</th>
+      <th class="num">Clientes</th><th class="num">Atraso médio</th><th></th></tr></thead><tbody>
+      ${h.slice().reverse().map((s,ri)=>{
+        const i = h.length-1-ri;
+        const p = i>0?h[i-1]:null;
+        const d = p ? (s.totals.saldo-p.totals.saldo)/(p.totals.saldo||1) : null;
+        return `<tr>
+          <td class="mono" style="font-weight:600">${s.ref.split('-').reverse().join('/')}</td>
+          <td class="mono" style="font-size:11px;color:var(--muted)">${new Date(s.createdAt).toLocaleString('pt-BR')}</td>
+          <td style="font-size:11px;color:var(--muted);max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.file||'—')}</td>
+          <td class="num">${brl(s.totals.saldo)}</td>
+          <td class="num">${d==null?'—':`<span class="pill ${d>0.01?'up':d<-0.01?'down':''}">${d>0?'+':''}${pct(d,1)}</span>`}</td>
+          <td class="num">${s.totals.titulos}</td>
+          <td class="num">${s.totals.clientes}</td>
+          <td class="num">${num(s.totals.atrasoPond,0)} d</td>
+          <td><button class="btn dan" data-del="${s.id}" style="padding:3px 8px;font-size:11px">Excluir</button></td>
+        </tr>`;
+      }).join('')}</tbody></table></div>`);
+
+  if(h.length>=2){
+    const last=h[h.length-1], prev=h[h.length-2];
+    const keys=new Set([...Object.keys(last.clients),...Object.keys(prev.clients)]);
+    const mov=Array.from(keys).map(k=>{
+      const a=prev.clients[k], b=last.clients[k];
+      return {nome:(b||a).nome, cnpj:(b||a).cnpj, ant:a?a.saldo:0, atu:b?b.saldo:0, d:(b?b.saldo:0)-(a?a.saldo:0),
+              tipo: !a?'entrou':!b?'saiu':'permaneceu'};
+    }).sort((x,y)=>Math.abs(y.d)-Math.abs(x.d)).slice(0,20);
+    html += card('Movimentação entre os dois últimos snapshots', prev.ref+' → '+last.ref,
+      `<div class="tw"><table><thead><tr><th>Cliente</th><th>Status</th><th class="num">Saldo anterior</th>
+      <th class="num">Saldo atual</th><th class="num">Variação</th></tr></thead><tbody>
+      ${mov.map(m=>`<tr><td class="cli">${esc(m.nome)}<small>${esc(m.cnpj)}</small></td>
+        <td><span class="pill ${m.tipo==='entrou'?'up':m.tipo==='saiu'?'down':''}">${m.tipo}</span></td>
+        <td class="num">${brl(m.ant)}</td><td class="num">${brl(m.atu)}</td>
+        <td class="num" style="color:${m.d>0?'var(--bad)':m.d<0?'var(--ok)':'var(--muted)'};font-weight:600">${m.d>0?'+':''}${brl(m.d)}</td></tr>`).join('')}
+      </tbody></table></div>
+      <div class="card-b"><div class="note"><b>"Saiu" não significa "pagou".</b> Um cliente some da base quando o título é liquidado, mas também quando é cancelado, renegociado com nova data ou baixado. O componente de cura do rating herda essa ambiguidade — se houver muita renegociação, ele superestima o comportamento do cliente.</div></div>`);
+  }
+  return html;
+}
+
+function vQual(A){
+  const I = S.issues;
+  const sev = {alta:'bad',media:'',baixa:'info'};
+  let html = card('Qualidade da base','verificações rodadas na carga do arquivo',
+    `<div class="kpis">
+      ${kpi('Linhas lidas',S.raw.length,'de contas a receber')}
+      ${kpi('Linhas nos filtros',S.rows.length, S.raw.length-S.rows.length+' fora')}
+      ${kpi('Alertas',I.reduce((s,i)=>s+i.rows.length,0), I.length+' tipos', I.length?'warn':'ok')}
+      ${kpi('Sem CNPJ',S.raw.filter(r=>!r.cnpj).length,'agrupamento cai para razão social', S.raw.filter(r=>!r.cnpj).length?'warn':'ok')}
+    </div>`);
+  if(!I.length){
+    html += '<div class="card"><div class="empty">Nenhuma inconsistência encontrada.</div></div>';
+  } else {
+    I.forEach(i=>{
+      html += card(i.titulo, i.rows.length+' registro'+(i.rows.length===1?'':'s'),
+        `<div class="card-b"><div class="note ${sev[i.sev]}">${i.desc}</div></div>
+        <div class="tw"><table><thead><tr><th class="num">Linha</th><th>Cliente</th><th>NF</th>
+          <th class="num">Emissão</th><th class="num">Vencimento</th><th class="num">Saldo</th><th>Situação</th></tr></thead><tbody>
+          ${i.rows.slice(0,40).map(r=>`<tr><td class="num" style="color:var(--muted)">${r.linha}</td>
+            <td class="cli">${esc(r.fantasia)}</td><td class="mono">${esc(r.nf)}</td>
+            <td class="num">${brDate(r.emissao)}</td><td class="num">${brDate(r.venc)}</td>
+            <td class="num">${brl(r.saldo)}</td><td style="font-size:11.5px">${esc(r.situacao)}</td></tr>`).join('')}
+        </tbody></table></div>` + (i.rows.length>40?'<div class="card-b" style="color:var(--muted);font-size:11.5px">Mostrando 40 de '+i.rows.length+'.</div>':''));
+    });
+  }
+  return html;
+}
+
+function vBase(A){
+  return card('Títulos', S.rows.length+' de '+S.raw.length+' linhas após filtros',
+    sortable('base',[
+      {k:'cli',lab:'Cliente',val:r=>r.fantasia},
+      {k:'nf',lab:'NF',val:r=>r.nf},
+      {k:'cat',lab:'Categoria',val:r=>r.categoria},
+      {k:'emis',lab:'Emissão',num:1,val:r=>r.emissao?+r.emissao:0},
+      {k:'venc',lab:'Vencimento',num:1,val:r=>r.venc?+r.venc:0},
+      {k:'atr',lab:'Atraso',num:1,def:1,val:r=>r.atraso},
+      {k:'bk',lab:'Faixa',val:r=>r.atraso},
+      {k:'vl',lab:'Valor líquido',num:1,val:r=>r.vlLiq},
+      {k:'pg',lab:'Recebido',num:1,val:r=>r.pago},
+      {k:'sd',lab:'Saldo',num:1,val:r=>r.saldo},
+      {k:'sit',lab:'Situação',val:r=>r.situacao}
+    ], S.rows, r=>`<tr>
+      <td class="cli">${esc(r.fantasia)}<small>${esc(r.cnpj)}</small></td>
+      <td class="mono">${esc(r.nf)}</td>
+      <td style="font-size:11px;color:var(--muted)">${esc(r.categoria.replace('Clientes - ',''))}</td>
+      <td class="num">${brDate(r.emissao)}</td>
+      <td class="num">${brDate(r.venc)}</td>
+      <td class="num" style="color:${r.bucket.cor};font-weight:600">${num(r.atraso,0)}</td>
+      <td><span class="dot" style="background:${r.bucket.cor}"></span><span style="font-size:11px">${r.bucket.lab}</span></td>
+      <td class="num">${brl(r.vlLiq)}</td>
+      <td class="num" style="color:${r.pago>0?'var(--ok)':'var(--line)'}">${r.pago>0?brl(r.pago):'—'}</td>
+      <td class="num" style="font-weight:600">${brl(r.saldo)}</td>
+      <td style="font-size:11px">${esc(r.situacao)}</td>
+    </tr>`));
+}
+
+function vMetodo(){
+  return `
+  ${card('Como cada número é calculado','','<div class="card-b" style="font-size:13px;line-height:1.6;max-width:900px">' + `
+    <p class="eyebrow" style="margin-bottom:8px">Base</p>
+    <p style="margin-bottom:14px">Lê a primeira aba do arquivo, localiza a linha de cabeçalho procurando <span class="mono">Cliente ou Fornecedor (Razão Social)</span> e mantém apenas linhas cujo <span class="mono">Tipo</span> contenha "receber". O valor usado em todo o painel é <b>A Pagar ou Receber</b> — o saldo aberto — e não o Valor Líquido. Em títulos recebidos parcialmente os dois divergem; usar o Valor Líquido superestimaria a carteira.</p>
+
+    <p class="eyebrow" style="margin-bottom:8px">Aging</p>
+    <p style="margin-bottom:14px">Atraso = data de referência − data de vencimento, em dias corridos. O painel <b>não</b> usa a coluna <span class="mono">Situação do Vencimento</span> da exportação, porque ela congela a faixa na data em que o arquivo foi gerado. Recalcular contra a data de referência mantém o aging vivo mesmo com base antiga — e revela divergências entre as duas leituras.</p>
+
+    <p class="eyebrow" style="margin-bottom:8px">Concentração</p>
+    <p style="margin-bottom:14px">Clientes agrupados por CNPJ (razão social como reserva, quando o CNPJ está vazio). HHI = soma dos quadrados das participações × 10.000; abaixo de 1.500 é concentração baixa, acima de 2.500 é alta. Curva ABC: A até 80% do saldo acumulado, B até 95%, C o resto.</p>
+
+    <p class="eyebrow" style="margin-bottom:8px">PECLD</p>
+    <p style="margin-bottom:14px">Saldo de cada faixa × percentual da faixa. Os percentuais padrão são <b>premissa arbitrária</b>, não histórico observado. Servem para dimensionar ordem de grandeza. Para uso contábil sob CPC 48 precisam ser substituídos pela taxa de não-recuperação real por faixa — que este painel só consegue estimar depois de vários snapshots.</p>
+  ` + '</div>')}
+
+  ${card('Rating — os cinco componentes','score 0–100, quanto maior melhor', '<div class="card-b" style="font-size:13px;line-height:1.6;max-width:900px">' + `
+    <table style="margin-bottom:16px"><thead><tr><th>Componente</th><th class="num">Peso</th><th>O que mede</th><th>Precisa de</th></tr></thead><tbody>
+      <tr><td><b>Severidade</b></td><td class="num">35</td><td>Atraso médio ponderado pelo saldo, mapeado numa curva: 0d=100, 30d=82, 90d=55, 365d=15, 730d+=0</td><td>só a base atual</td></tr>
+      <tr><td><b>Acúmulo</b></td><td class="num">15</td><td>Quantidade de títulos vencidos e amplitude entre o mais novo e o mais antigo. 1 título isolado ≠ 16 títulos abertos ao longo de 400 dias</td><td>só a base atual</td></tr>
+      <tr><td><b>Cronicidade</b></td><td class="num">20</td><td>Em quantos snapshots o cliente apareceu inadimplente, desde a 1ª aparição</td><td>≥ 2 snapshots</td></tr>
+      <tr><td><b>Tendência</b></td><td class="num">12</td><td>Variação do saldo contra o snapshot anterior. Crescendo 50%+ = 0, caindo 50%+ = 100</td><td>≥ 2 snapshots</td></tr>
+      <tr><td><b>Cura</b></td><td class="num">18</td><td>Proporção de títulos que desapareceram da base entre snapshots consecutivos</td><td>≥ 2 snapshots</td></tr>
+    </tbody></table>
+    <p style="margin-bottom:14px">Quando um componente não tem dado, ele sai do cálculo e os pesos restantes são <b>renormalizados</b> — não há penalização por ausência de histórico. Com um snapshot só, o score sai de severidade (70%) + acúmulo (30%) e é marcado <span class="pill prov">prov</span>.</p>
+    <p style="margin-bottom:14px"><b>Faixas:</b> A ≥ 80 · B 65–79 · C 50–64 · D 35–49 · E &lt; 35. Os cortes são convenção, não estatística: nenhum deles foi calibrado contra perda observada, porque essa série ainda não existe.</p>
+    <div class="note"><b>O que este rating não é.</b> Não é probabilidade de default. É um índice ordinal de comportamento de pagamento construído com julgamento, não com regressão sobre inadimplência histórica. Serve para ordenar esforço de cobrança e sustentar conversa interna. Não serve como base única para provisão contábil, corte de crédito ou rescisão contratual — para isso os pesos precisam ser validados contra o que de fato virou perda.</div>
+  ` + '</div>')}
+
+  ${card('Limitações conhecidas','ler antes de decidir com base neste painel','<div class="card-b" style="max-width:900px">' + `
+    <div class="note bad"><b>A senha não é segurança.</b> A verificação roda no navegador. Qualquer pessoa com o link pode ver o código-fonte e remover a barreira em segundos. Se a base de clientes for publicada junto no repositório, ela é pública — CNPJs, valores e histórico de inadimplência de clientes reais. Mantenha o repositório privado e carregue a planilha pelo botão, sem versioná-la.</div>
+    <div class="note"><b>O histórico mora neste navegador.</b> Fica no armazenamento local: some ao limpar cache, não acompanha outro computador e não é compartilhado com a equipe. Exporte o JSON a cada snapshot e guarde no Drive.</div>
+    <div class="note"><b>Cura ≠ pagamento.</b> Título que sumiu entre dois snapshots pode ter sido pago, cancelado, renegociado ou baixado. O painel não distingue. Em carteira com muita renegociação, o componente de cura fica otimista.</div>
+    <div class="note"><b>Chave de título frágil.</b> Títulos são identificados por NF + vencimento + valor. Renegociação que mude a data de vencimento aparece como título antigo curado + título novo — inflando cura e cronicidade ao mesmo tempo.</div>
+    <div class="note"><b>Falta o denominador.</b> A exportação traz só os títulos vencidos. Sem a carteira completa de contas a receber não dá para calcular o indicador que a diretoria costuma pedir — % de inadimplência sobre o faturado. Para isso, exporte a base sem filtro de situação e o painel passa a conseguir a razão vencido/total.</div>
+    <div class="note"><b>Aging por dias corridos.</b> Sem calendário de feriados nem prazo de compensação bancária. Atrasos de 1 a 3 dias podem ser só liquidação em trânsito.</div>
+  ` + '</div>')}`;
+}
+
+/* =========================================================
+   QUALIDADE DA BASE
+   ========================================================= */
+function checkIssues(){
+  const R = S.raw, out = [];
+  const add=(t,d,sev,rows)=>{ if(rows.length) out.push({titulo:t,desc:d,sev,rows}); };
+
+  add('Situação diz atrasado, mas o título ainda não venceu',
+      'A coluna Situação classifica como atrasado títulos com vencimento posterior à data de referência. Ou a Situação está desatualizada no sistema de origem, ou o vencimento foi prorrogado sem baixa da situação. O painel classifica pelo vencimento, não pela Situação.',
+      'media', R.filter(r=>r.venc && r.atraso<0 && norm(r.situacao).includes('atrasado')));
+
+  add('Faixa da exportação diverge do aging recalculado',
+      'A coluna Situação do Vencimento da planilha aponta faixa diferente da calculada contra a data de referência. Esperado se o arquivo foi exportado em outra data — vira problema se alguém comparar os dois números em reuniões diferentes.',
+      'baixa', R.filter(r=>{
+        if(!r.sitVencOrig || !r.venc) return false;
+        const o = norm(r.sitVencOrig);
+        const k = r.bucket.k;
+        if(o.includes('a vencer')) return k!=='AV';
+        if(o.includes('poucos dias')) return !['B30'].includes(k);
+        if(o.includes('ate 30')) return k!=='B30';
+        if(o.includes('31 a 60')) return k!=='B60';
+        if(o.includes('61 a 90')) return k!=='B90';
+        if(o.includes('mais de 90')) return !['B180','B365','BMX'].includes(k);
+        return false;
+      }));
+
+  add('Recebimento parcial — saldo difere do valor líquido',
+      'Títulos com recebimento parcial. O painel usa o saldo aberto (A Pagar ou Receber). Se algum relatório paralelo somar Valor Líquido, os totais não vão bater.',
+      'baixa', R.filter(r=>Math.abs(r.vlLiq-r.saldo)>0.01 && r.pago>0));
+
+  add('Saldo zerado ou negativo','Títulos sem saldo aberto ou com saldo negativo. Não deveriam constar numa base de inadimplência.',
+      'media', R.filter(r=>r.saldo<=0));
+
+  add('Sem data de vencimento','Sem vencimento não há aging. Estes títulos entram no cálculo com atraso 0 e distorcem o atraso médio para baixo.',
+      'alta', R.filter(r=>!r.venc));
+
+  add('Vencimento anterior à emissão','Datas invertidas. Erro de digitação ou de importação no sistema de origem.',
+      'media', R.filter(r=>r.venc && r.emissao && r.venc<r.emissao));
+
+  add('Sem CNPJ/CPF','O agrupamento por cliente cai para a razão social. Se a mesma empresa aparecer com grafias diferentes, ela será contada como clientes distintos e a concentração ficará subestimada.',
+      'media', R.filter(r=>!r.cnpj));
+
+  const seen = new Map();
+  R.forEach(r=>{ if(!r.nf) return; const k=r.tid; seen.set(k,(seen.get(k)||0)+1); });
+  add('Possível duplicidade','Mesma NF, mesmo vencimento e mesmo valor aparecem mais de uma vez. Pode ser parcela legítima repetida ou dupla contagem — confira antes de usar o total.',
+      'alta', R.filter(r=>r.nf && seen.get(r.tid)>1));
+
+  S.issues = out;
+}
+
+/* =========================================================
+   FILTROS
+   ========================================================= */
+function fillFilters(){
+  const cats = Array.from(new Set(S.raw.map(r=>r.categoria))).sort();
+  $('#fCat').innerHTML = '<option value="">Todas</option>'+cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  $('#fBucket').innerHTML = '<option value="">Todas</option>'+BUCKETS.map(b=>`<option value="${b.k}">${b.lab}</option>`).join('');
+  $('#fRef').value = iso(S.ref);
+}
+function applyFilters(){
+  const cat=$('#fCat').value, bk=$('#fBucket').value, min=parseFloat($('#fMin').value)||0;
+  const q=norm($('#fQ').value), inclAV=$('#fVenc').value==='incl';
+  S.rows = S.raw.filter(r=>{
+    if(!inclAV && r.atraso<0) return false;
+    if(cat && r.categoria!==cat) return false;
+    if(bk && r.bucket.k!==bk) return false;
+    if(r.saldo<min) return false;
+    if(q && !(norm(r.fantasia).includes(q)||norm(r.razao).includes(q)||norm(r.cnpj).includes(q)||norm(r.nf).includes(q))) return false;
+    return true;
+  });
+}
+
+/* =========================================================
+   RENDER
+   ========================================================= */
+function render(){
+  enrich();
+  checkIssues();
+  applyFilters();
+  const A = agg(S.rows);
+  computeRating(A.cli, S.hist);
+  A.cli.sort((a,b)=>b.saldo-a.saldo);
+  let acc=0; A.cli.forEach(c=>{ acc+=A.total?c.saldo/A.total:0; c.acum=acc; c.abc=acc<=0.8?'A':(acc<=0.95?'B':'C'); });
+
+  $('#mFile').textContent = S.file || '—';
+  $('#mRef').textContent = brDate(S.ref);
+  $('#mSnaps').textContent = S.hist.length;
+
+  $('#v-carteira').innerHTML = vCarteira(A);
+  $('#v-aging').innerHTML    = vAging(A);
+  $('#v-conc').innerHTML     = vConc(A);
+  $('#v-faixas').innerHTML   = vFaixas(A);
+  $('#v-rating').innerHTML   = vRating(A);
+  $('#v-fila').innerHTML     = vFila(A);
+  $('#v-hist').innerHTML     = vHist(A);
+  $('#v-qual').innerHTML     = vQual(A);
+  $('#v-base').innerHTML     = vBase(A);
+  $('#v-metodo').innerHTML   = vMetodo();
+  S.A = A;
+  bindDynamic();
+}
+function bindDynamic(){
+  $$('.pecldIn').forEach(i=>i.addEventListener('change',e=>{
+    S.pecld[e.target.dataset.k] = parseFloat(e.target.value)||0;
+    lsSet(LS_PECLD,S.pecld); render();
+  }));
+  const b=(id,fn)=>{ const el=$(id); if(el) el.addEventListener('click',fn); };
+  b('#hSnap',saveSnap);
+  b('#hExp',exportHist);
+  b('#hImp',()=>$('#hImpF').click());
+  const f=$('#hImpF'); if(f) f.addEventListener('change',e=>{ if(e.target.files[0]) importHist(e.target.files[0]); e.target.value=''; });
+  b('#hClr',()=>{ if(confirm('Apagar todos os '+S.hist.length+' snapshots? Não dá para desfazer.')){ S.hist=[]; lsSet(LS_HIST,[]); render(); toast('Histórico apagado.'); } });
+  $$('[data-del]').forEach(el=>el.addEventListener('click',()=>delSnap(el.dataset.del)));
+}
+
+/* =========================================================
+   EXPORT XLSX
+   ========================================================= */
+function exportXlsx(){
+  const A = S.A;
+  const wb = XLSX.utils.book_new();
+  const add=(name,rows)=>XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), name.slice(0,31));
+
+  add('Resumo',[
+    {Indicador:'Data de referência', Valor: brDate(S.ref)},
+    {Indicador:'Arquivo base', Valor: S.file},
+    {Indicador:'Gerado em', Valor: new Date().toLocaleString('pt-BR')},
+    {Indicador:'Saldo em aberto (R$)', Valor: A.total},
+    {Indicador:'Títulos', Valor: A.qtd},
+    {Indicador:'Clientes', Valor: A.nCli},
+    {Indicador:'Atraso médio ponderado (dias)', Valor: +A.atrasoPond.toFixed(1)},
+    {Indicador:'Vencido > 90 dias (R$)', Valor: A.v90},
+    {Indicador:'Vencido > 90 dias (%)', Valor: A.total?A.v90/A.total:0},
+    {Indicador:'Vencido > 365 dias (R$)', Valor: A.v365},
+    {Indicador:'PECLD estimada (R$)', Valor: A.pecldTot},
+    {Indicador:'PECLD / saldo (%)', Valor: A.total?A.pecldTot/A.total:0},
+    {Indicador:'Top 5 (% do saldo)', Valor: A.total?A.top5/A.total:0},
+    {Indicador:'Top 10 (% do saldo)', Valor: A.total?A.top10/A.total:0},
+    {Indicador:'HHI', Valor: +A.hhi.toFixed(1)},
+    {Indicador:'Ticket médio por título (R$)', Valor: A.ticketTit},
+    {Indicador:'Ticket médio por cliente (R$)', Valor: A.ticketCli},
+    {Indicador:'Snapshots no histórico', Valor: S.hist.length}
+  ]);
+
+  add('Titulos', S.rows.map(r=>({
+    Cliente:r.fantasia, 'Razão Social':r.razao, 'CNPJ/CPF':r.cnpj, NF:r.nf, Categoria:r.categoria, Tags:r.tags,
+    Emissão:r.emissao?brDate(r.emissao):'', Vencimento:r.venc?brDate(r.venc):'',
+    'Atraso (dias)':r.atraso, 'Faixa de aging':r.bucket.lab, 'Faixa de valor':r.faixa.lab,
+    'Valor Líquido':r.vlLiq, Recebido:r.pago, 'Saldo aberto':r.saldo,
+    'PECLD estimada':+r.pecld.toFixed(2), Situação:r.situacao, 'Situação do Vencimento (origem)':r.sitVencOrig
+  })));
+
+  add('Aging', A.bk.map(b=>({
+    Faixa:b.lab, Saldo:b.valor, '% carteira':b.part, Títulos:b.qtd, Clientes:b.clientes,
+    'Ticket médio': b.qtd?b.valor/b.qtd:0, '% PECLD':(S.pecld[b.k]??b.pecld)/100,
+    'PECLD':b.valor*((S.pecld[b.k]??b.pecld)/100)
+  })));
+
+  add('Faixas de valor', A.fx.map(f=>({
+    Faixa:f.lab, Títulos:f.qtd, '% dos títulos': A.qtd?f.qtd/A.qtd:0, Saldo:f.valor, '% do saldo':f.part
+  })));
+
+  add('Concentracao', A.cli.map((c,i)=>({
+    '#':i+1, Cliente:c.nome, 'Razão Social':c.razao, 'CNPJ/CPF':c.cnpj, Saldo:c.saldo,
+    '% carteira':A.total?c.saldo/A.total:0, '% acumulado':c.acum, 'Curva ABC':c.abc,
+    Títulos:c.titulos, 'Atraso médio':+c.atrasoPond.toFixed(1), 'Atraso máximo':c.maxAtraso,
+    Categorias:c.cats.join('; ')
+  })));
+
+  add('Rating', A.cli.map(c=>({
+    Cliente:c.nome, 'CNPJ/CPF':c.cnpj, Rating:c.rating, Score:+c.score.toFixed(1),
+    Provisório: c.provisorio?'Sim':'Não',
+    'Severidade (35)': c.comp.sev!=null?+c.comp.sev.toFixed(1):'',
+    'Acúmulo (15)': c.comp.acu!=null?+c.comp.acu.toFixed(1):'',
+    'Cronicidade (20)': c.comp.cro!=null?+c.comp.cro.toFixed(1):'',
+    'Tendência (12)': c.comp.ten!=null?+c.comp.ten.toFixed(1):'',
+    'Cura (18)': c.comp.cur!=null?+c.comp.cur.toFixed(1):'',
+    'Δ saldo vs snapshot anterior': c.deltaSaldo!=null?+c.deltaSaldo.toFixed(4):'',
+    'Taxa de cura': c.cureRate!=null?+c.cureRate.toFixed(4):'',
+    Saldo:c.saldo, Títulos:c.titulos, 'Atraso médio':+c.atrasoPond.toFixed(1)
+  })));
+
+  const fila = A.cli.slice().sort((a,b)=>b.priScore-a.priScore);
+  const maxP = fila[0]?fila[0].priScore:1;
+  add('Fila de cobranca', fila.map((c,i)=>({
+    Ordem:i+1, Cliente:c.nome, 'CNPJ/CPF':c.cnpj, Rating:c.rating, Score:+c.score.toFixed(1),
+    Saldo:c.saldo, 'Índice de prioridade': +(c.priScore/maxP*100).toFixed(1),
+    'Prioridade (R$ em risco)': +c.priScore.toFixed(2),
+    Títulos:c.titulos, 'Atraso médio':+c.atrasoPond.toFixed(1), 'Título mais antigo (dias)':c.maxAtraso,
+    'Ação sugerida': c.maxAtraso>365?'Avaliar baixa / jurídico':c.score<35?'Escalar — suspensão contratual':c.score<50?'Negociação formal com prazo':c.score<65?'Cobrança ativa':'Régua padrão'
+  })));
+
+  add('Historico', S.hist.map(s=>({
+    Referência:s.ref, 'Gravado em':new Date(s.createdAt).toLocaleString('pt-BR'), Arquivo:s.file||'',
+    Saldo:s.totals.saldo, Títulos:s.totals.titulos, Clientes:s.totals.clientes, 'Atraso médio':s.totals.atrasoPond
+  })));
+
+  const histCli=[];
+  S.hist.forEach(s=>Object.entries(s.clients).forEach(([k,c])=>histCli.push({
+    Referência:s.ref, Cliente:c.nome, 'CNPJ/CPF':c.cnpj, Saldo:c.saldo, Títulos:c.titulos,
+    'Atraso médio':c.atrasoPond, 'Atraso máximo':c.maxAtraso
+  })));
+  if(histCli.length) add('Historico por cliente', histCli);
+
+  const iss=[];
+  S.issues.forEach(i=>i.rows.forEach(r=>iss.push({
+    Alerta:i.titulo, Severidade:i.sev, Linha:r.linha, Cliente:r.fantasia, NF:r.nf,
+    Emissão:r.emissao?brDate(r.emissao):'', Vencimento:r.venc?brDate(r.venc):'',
+    Saldo:r.saldo, Situação:r.situacao
+  })));
+  add('Qualidade da base', iss.length?iss:[{Alerta:'Nenhuma inconsistência encontrada'}]);
+
+  XLSX.writeFile(wb, 'inadimplencia-perinity-'+iso(S.ref)+'.xlsx');
+  toast('Excel gerado com 9 abas.');
+}
+
+/* =========================================================
+   CARGA
+   ========================================================= */
+function loadBuffer(ab, name){
+  try{
+    parseWorkbook(ab, name);
+    const maxV = S.raw.reduce((m,r)=>r.venc&&+r.venc>m?+r.venc:m,0);
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    S.ref = hoje;
+    fillFilters();
+    $('#loaderCard').style.display='none';
+    $('#filterCard').style.display='block';
+    render();
+    toast(S.raw.length+' títulos carregados.');
+  }catch(e){
+    alert('Não foi possível ler o arquivo.\n\n'+e.message+'\n\nO painel espera a exportação padrão do Omie (Base Contas a Receber Contas por Período), com as colunas Cliente ou Fornecedor (Razão Social), A Pagar ou Receber e Data de Vencimento (completa).');
+  }
+}
+function handleFile(f){
+  if(!f) return;
+  const fr = new FileReader();
+  fr.onload = () => loadBuffer(fr.result, f.name);
+  fr.onerror = () => alert('Falha ao ler o arquivo.');
+  fr.readAsArrayBuffer(f);
+}
+
+/* =========================================================
+   BIND
+   ========================================================= */
+$('#pick').addEventListener('click',()=>$('#file').click());
+$('#file').addEventListener('change',e=>{ handleFile(e.target.files[0]); e.target.value=''; });
+$('#tryFetch').addEventListener('click',async()=>{
+  try{
+    const r = await fetch('dados.xlsx',{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    loadBuffer(await r.arrayBuffer(),'dados.xlsx');
+  }catch(e){
+    alert('Não encontrei dados.xlsx ao lado desta página.\n\nEsse botão só funciona se você versionar a planilha no repositório com esse nome — o que expõe a base de clientes se o repositório for público. Use o botão "Escolher arquivo" se preferir não versionar.');
+  }
+});
+const drop = $('#drop');
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.add('hot'); }));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.remove('hot'); }));
+drop.addEventListener('drop',e=>{ if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+
+$$('.tab').forEach(t=>t.addEventListener('click',()=>{
+  $$('.tab').forEach(x=>x.classList.remove('on'));
+  $$('.view').forEach(x=>x.classList.remove('on'));
+  t.classList.add('on');
+  $('#'+t.dataset.v).classList.add('on');
+  window.scrollTo({top:0,behavior:'instant'});
+}));
+
+['#fCat','#fBucket','#fVenc'].forEach(s=>$(s).addEventListener('change',()=>{ if(S.raw.length) render(); }));
+$('#fMin').addEventListener('change',()=>{ if(S.raw.length) render(); });
+let qt; $('#fQ').addEventListener('input',()=>{ clearTimeout(qt); qt=setTimeout(()=>{ if(S.raw.length) render(); },260); });
+$('#fRef').addEventListener('change',e=>{
+  const d=parseDate(e.target.value); if(d){ S.ref=d; if(S.raw.length) render(); }
+});
+$('#btnReset').addEventListener('click',()=>{
+  $('#fCat').value=''; $('#fBucket').value=''; $('#fMin').value=0; $('#fQ').value=''; $('#fVenc').value='excl';
+  const h=new Date(); h.setHours(0,0,0,0); S.ref=h; $('#fRef').value=iso(h);
+  render();
+});
+$('#btnSnap').addEventListener('click',saveSnap);
+$('#btnXls').addEventListener('click',exportXlsx);
+$('#btnNew').addEventListener('click',()=>{
+  S.raw=[]; S.rows=[]; S.file='';
+  $('#loaderCard').style.display='block';
+  $('#filterCard').style.display='none';
+  $$('.view').forEach(v=>v.innerHTML='');
+  $('#mFile').textContent='—'; $('#mRef').textContent='—';
+});
+
+/* =========================================================
+   BOOT
+   ========================================================= */
+function boot(){
+  S.hist  = lsGet(LS_HIST,[]) || [];
+  S.pecld = lsGet(LS_PECLD,{}) || {};
+  $('#mSnaps').textContent = S.hist.length;
+  const h=new Date(); h.setHours(0,0,0,0);
+  S.ref=h; $('#fRef').value=iso(h);
+}
+if(sessionStorage.getItem('perinity_auth')==='1') boot();
+
+</script>
+</body>
+</html>
